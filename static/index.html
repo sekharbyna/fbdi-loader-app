@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fusion FBDI Load Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div>
+        <p class="kicker">Oracle Cloud ERP · File-Based Data Import</p>
+        <h1>FBDI Load Console</h1>
+        <p class="lede">
+          Upload the ZIP generated from an FBDI template, park it in UCM,
+          run <em>Load Interface File for Import</em>, then submit the module
+          import so rows move from interface tables into application tables.
+        </p>
+      </div>
+      <div class="badge">REST · erpintegrations</div>
+    </header>
+
+    <div class="pipeline">
+      <div class="step"><b>01 · Template</b><span>Fill XLSM and Generate CSV File → ZIP</span></div>
+      <div class="step"><b>02 · UCM</b><span>uploadFileToUCM into the module account</span></div>
+      <div class="step"><b>03 · Interface</b><span>InterfaceLoaderController writes interface tables</span></div>
+      <div class="step"><b>04 · Import</b><span>Module ESS job posts to base tables</span></div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>1. Cloud connection</h2>
+        <label for="baseUrl">Instance base URL</label>
+        <input id="baseUrl" placeholder="https://fa-xxxx.fa.ocs.oraclecloud.com" />
+        <div class="row">
+          <div>
+            <label for="username">Integration username</label>
+            <input id="username" autocomplete="username" />
+          </div>
+          <div>
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="current-password" />
+          </div>
+        </div>
+        <p class="hint">Needs a user that can call ERP Integrations and submit ESS jobs (typically an integration specialist role).</p>
+        <div class="actions">
+          <button class="ghost" id="pingBtn" type="button">Test connection</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2. FBDI object</h2>
+        <label for="objectKey">Import object</label>
+        <select id="objectKey"></select>
+        <p class="hint" id="objectMeta"></p>
+        <ul class="object-notes" id="objectNotes"></ul>
+        <div class="row">
+          <div>
+            <label for="interfaceId">Interface ID</label>
+            <input id="interfaceId" placeholder="e.g. 15 for journals" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="ghost" id="lookupBtn" type="button">Lookup Interface ID</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>3. File and load mode</h2>
+      <label for="file">FBDI data ZIP from the template (Generate CSV File)</label>
+      <input id="file" type="file" accept=".zip,application/zip,application/x-zip-compressed" />
+      <p class="hint" id="fileChosen">No file chosen yet. In the XLSM click <strong>Generate CSV File</strong>, save the ZIP on your PC, then choose that ZIP here. Do not upload the .xlsm.</p>
+
+      <label>Mode</label>
+      <div class="modes">
+        <label><input type="radio" name="mode" value="two_step" checked /> Two-step (recommended) — UCM, then Load Interface, then Import</label>
+        <label><input type="radio" name="mode" value="one_shot" /> One-shot importBulkData</label>
+      </div>
+
+      <label class="modes" style="margin-top:10px">
+        <input id="runImport" type="checkbox" checked />
+        Also submit the module Import job after interface load (two-step only)
+      </label>
+      <label class="modes">
+        <input id="waitForLoad" type="checkbox" checked />
+        Wait for each ESS job to finish before the next step (poll status)
+      </label>
+      <div class="row">
+        <div>
+          <label for="waitSeconds">Poll timeout (seconds)</label>
+          <input id="waitSeconds" value="300" />
+        </div>
+        <div>
+          <label for="statusRequestId">ESS Request ID</label>
+          <input id="statusRequestId" placeholder="Filled after submit" />
+        </div>
+      </div>
+
+      <label for="importParams">Import job ParameterList / ESSParameters</label>
+      <textarea id="importParams" placeholder="Ordered parameters for the module import job. Use #NULL for blanks."></textarea>
+      <p class="hint" id="paramHint">Parameter order is object-specific and should be confirmed on your pod.</p>
+
+      <div class="actions">
+        <button class="primary" id="loadBtn" type="button">Upload and load</button>
+        <button class="ghost" id="statusBtn" type="button">Refresh job status</button>
+        <button class="ghost" id="logBtn" type="button">Download ESS log</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>4. Run log</h2>
+      <p class="meta" id="lastIds">No request submitted yet.</p>
+      <pre id="log">Ready.</pre>
+    </section>
+
+    <footer>
+      Stage 1 only fills interface tables. Stage 2 (Import Journals, Import Payables Invoices, Post Mass Additions, …)
+      is what writes the Oracle application tables. Confirm Interface IDs with erpprocesses inboundProcessDetails
+      before a production cutover.
+    </footer>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
